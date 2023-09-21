@@ -1,0 +1,38 @@
+# simple mapping to test
+Mappings:
+  RegionMap:
+    us-east-1:
+      Region: North Virginia
+    eu-central-1:
+      Region: Frankfurt
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # Recall bucket name has to be unique
+      BucketName : test-bucket-svw-acg
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+Outputs:
+  WebsiteUrl:
+    Description: URL for website
+    Value:
+      Fn::GetAtt: [S3Bucket, WebsiteURL]
+  # Below we use short notation to get the attribute
+  S3Arn:
+    Description: Arn of the s3 bucket
+    Value:
+      !GetAtt S3Bucket.Arn
+  # Third approach
+  S3DomainName:
+    Description: IPv4 DNS
+    Value: !GetAtt
+      - S3Bucket
+      - DomainName
+  FindInMap:
+    # FindInMap MUST have three arguments
+    Description: Testing the FindInMap function
+    Value:
+     Fn::FindInMap: [ RegionMap, !Ref AWS::Region, Region]

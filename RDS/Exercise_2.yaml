@@ -1,0 +1,125 @@
+# Example template to launch an EC2 instance
+# It uses a lot of intrinsic funtions (learning from the course)
+
+# TRY
+# either create a role or refer to a role that has S3 permission to load a file
+
+Parameters:
+  InstanceTypes:
+    Type: String
+    Description: Select an instance type for the EC2 instance
+    AllowedValues: [t2.micro, t2.medium]
+    Default: t2.micro
+  InstanceName:
+    Type: String
+    Description: "Give a name to the instance type. This must be between 4 and 20 characters long. Only
+    characters and hyphen are allowed"
+    # The code below is not visible but checks condition on the input.
+    # If a constraint in violated the ConstraintDescription will show up in the
+    # error message.
+    MinLength: 4
+    MaxLength: 20
+    AllowedPattern: ([a-zA-Z-]*)
+    ConstraintDescription: The provided instance name does not meet restriction of 4-20 symbols only using letters
+  myKeyPair:  # This let's you select an existing key-pair in region to ssh into the instance
+      Description: Amazon EC2 Key Pair
+      Type: AWS::EC2::KeyPair::KeyName
+  EnvType: # FOR CONDITIONS
+    Description: Environment type.
+    Default: test
+    Type: String
+    AllowedValues: [prod, dev, test]
+    ConstraintDescription: Must specify prod, dev or test
+Conditions:
+  CreateProdResources:
+    Fn::Equals: [!Ref EnvType, prod]
+  CreateTestResources:
+    Fn::Equals: [!Ref EnvType, test]
+Mappings:
+  AMIMap:
+    us-east-1:
+      AMI: ami-04902260ca3d33422  # AMIs can be found when you launch an instance
+    us-east-2:
+      AMI: ami-0d718c3d715cec4a7
+Resources:
+  EC2Instance: # user provided Logical Id in this template and stack
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref myKeyPair
+      # AvailabilityZone:
+      # - Fn::Select is used select an element in a list
+      # - Select element at index 2
+      # - Fn::GetAZs gets the AZs in the current region
+      # - !Ref AWS::Region is a global parameter that return the current region
+      # AvailabilityZone: !Select [2, Fn::GetAZs: !Ref AWS::Region]
+      AvailabilityZone:
+        Fn::Select:
+          - 2
+          - Fn::GetAZs: !Ref AWS::Region
+      # ImageId
+      # - !FindInMap looks up value in the AMIMAP (under mappings)
+      # - It uses the !Ref AWS::Region as key (here that is us-east-1) the corresponding dictionary
+      # - In the dictionary it uses AMI as key and the related value is returned (here the ami id)
+      # ImageId: ami-04902260ca3d33422
+      ImageId : !FindInMap [AMIMap, !Ref AWS::Region, AMI]
+      # InstanceType
+      # 1) The user selects an instance type under the parameters section
+      # in the template we reference the value selected by te user.
+      # InstanceType: !Ref InstanceTypes
+      # 2) Use conditional to start resources depending on conditions
+      # Here we start a t2.micro if we have selected test as environment type
+      # Else it starts a t2.medium
+      InstanceType: !If [CreateTestResources, t2.micro, t2.medium]
+      Monitoring: false
+      # 4. Later CREATE ANOTHER RESOURCE
+      #SecurityGroupIds:
+      #  - String
+      #SecurityGroups:
+      #  - String
+      # 5. Allow the instance to be launched in a specific subnet
+      # This will be interesting when we create our own vpc and subnets
+      # SubnetId: String
+
+      # Tags - for value the parameter InstanceName and region are joined
+      # the instance will be visible in the console under that name
+      Tags:
+        - Key: Name
+          Value: !Join [" ",[ !Ref InstanceName, !Ref AWS::Region]]
+      #Volumes:
+      #  - Volume
+      UserData:
+        !Base64 |
+        #!/bin/bash
+        # Ensure AWS CFN Bootstrap is the latest
+        yum install -y aws-cfn-bootstrap
+        yum -y update
+        mkdir test
+        echo sacha -> test.txt
+Outputs:
+  # maybe this is the section to see what certain function do as you can output results
+  # for example print the id of a subnet or vpc, Just practice
+  InstanceId:
+    Description: The EC2 instance Id
+    Value: !Ref EC2Instance
+  ServerDns:
+    Value: !GetAtt
+      - EC2Instance
+      - PublicDnsName
+    Description: The DNS name of the EC2 instance
+  PublicIp:
+    # Function gets the PublicIp address from the resource EC2instance
+    Value: !GetAtt [EC2Instance, PublicIp]
+    Description: The public Ip adress of the instance
+  TestingFunctions1:
+    # The outputs section can also be used to test the output that certain intrinsic functions generate
+    Description: Testing a function !Join !Select !GetAZs
+    #Value: !Ref AWS::Region
+    Value:
+     Fn::Join: [ " ", ["Instance in AZ", !Select [2, Fn::GetAZs: !Ref AWS::Region]]]
+     # Fn::Join: [" ", Fn::GetAZs: !Ref AWS::Region]
+     #  Fn::Select: [2, Fn::GetAZs: !Ref AWS::Region]
+  TestingFunctions2:
+    Description: Testing Fn::Sub
+    # use case: create reference at run time
+    Value:
+      Fn::Sub: "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc"

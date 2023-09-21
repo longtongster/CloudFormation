@@ -1,0 +1,73 @@
+# In this exercise we create an EC2 instance
+# We will use conditions to from the parameters that will
+# determine the instance type that will launched.
+
+Parameters:
+  EnvType:
+    Description: Environment type.
+    Default: test
+    Type: String
+    AllowedValues: [prod, dev, test]
+    ConstraintDescription: must specify
+
+Conditions:
+  CreateProdResources: Fn::Equals: [Ref EnvType,prod]
+
+Resource:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AdditionalInfo: String
+      Affinity: String
+      AvailabilityZone: String
+      BlockDeviceMappings:
+        - BlockDeviceMapping
+      CpuOptions:
+        CpuOptions
+      CreditSpecification:
+        CreditSpecification
+      DisableApiTermination: Boolean
+      EbsOptimized: Boolean
+      ElasticGpuSpecifications:
+        - ElasticGpuSpecification
+      ElasticInferenceAccelerators:
+        - ElasticInferenceAccelerator
+      EnclaveOptions:
+        EnclaveOptions
+      HibernationOptions:
+        HibernationOptions
+      HostId: String
+      HostResourceGroupArn: String
+      IamInstanceProfile: String
+      ImageId: String
+      InstanceInitiatedShutdownBehavior: String
+      InstanceType: String
+      Ipv6AddressCount: Integer
+      Ipv6Addresses:
+        - InstanceIpv6Address
+      KernelId: String
+      KeyName: String
+      LaunchTemplate:
+        LaunchTemplateSpecification
+      LicenseSpecifications:
+        - LicenseSpecification
+      Monitoring: Boolean
+      NetworkInterfaces:
+        - NetworkInterface
+      PlacementGroupName: String
+      PrivateIpAddress: String
+      RamdiskId: String
+      SecurityGroupIds:
+        - String
+      SecurityGroups:
+        - String
+      SourceDestCheck: Boolean
+      SsmAssociations:
+        - SsmAssociation
+      SubnetId: String
+      Tags:
+        - Tag
+      Tenancy: String
+      UserData: String
+      Volumes:
+        - Volume

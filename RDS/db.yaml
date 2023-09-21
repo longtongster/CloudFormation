@@ -1,0 +1,30 @@
+Parameters:
+  DBNameP:
+    Type: String
+  MUser:
+    Type: String
+  MPass:
+    Type: String
+    Description: "It shouldn't be less than 8 characters"
+
+Resources:
+  MyDBvideoInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref DBNameP
+      MasterUsername: !Ref MUser
+      MasterUserPassword: !Ref MPass
+      Engine: postgres
+      DBInstanceClass: db.t2.micro
+      DBInstanceIdentifier: !Join ["-",["MyDBInstance", !Ref "AWS::Region"]]
+      StorageType: gp2
+      PubliclyAccessible: True
+      AllocatedStorage: "20"
+      AvailabilityZone: !Select [1, !GetAZs ""]
+
+
+
+
+
+
+

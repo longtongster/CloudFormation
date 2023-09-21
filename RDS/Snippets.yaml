@@ -1,0 +1,24 @@
+# Joins the words with the dash as delimeter
+Name : Fn::Join:["-",[CloudFormation,Deep,Dive]]
+
+# Select an element from a list at a given index
+# Select Route
+Resource : Fn::Select:[2, [VPC, IGW, Route, Route Table]]
+
+# Split is similar to Join Fn::Split:[delimiter, source_string]
+Split: Fn::Select:[2, Fn:Split:[",",Fn:ImportValue:AccountSubnetIds]]
+
+# Fn::GetAtt: [LogicalNameOfResource, attributeName]
+Attribute: Fn::GetAtt:[WebServerInstance, PublicDnsName]
+
+# All below return the same result
+AvailabilityZones: Fn::GetAZs:""
+AvailabilityZones: Fn::GetAZs:Ref!:AWS::Region
+AvailabilityZones: Fn::GetAZs:us-east-1
+
+# Fn::Sub can be used to substitute variables in an input string
+# used to create URLs or ARNs
+Substitute: Fn::Sub:[string, {key1:value1, key2:value2}]
+
+# Ref returns the value of specified parameter or resources
+SecurityGroup: Ref:LogicalNameOfSG

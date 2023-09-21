@@ -1,0 +1,79 @@
+# Example used to test some of the Intrinsic functions
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html
+
+Parameters:
+  myKeyPair: # KEY - select keypair in order to log into the EC2 instance
+    Description: Amazon EC2 Key Pair
+    Type: AWS::EC2::KeyPair::KeyName
+  EnvType:
+    Description: Environment type
+    Default: test
+    Type: String
+    AllowedValues: ["prod", "dev", "test"]
+    ConstraintDescription: must be valid value"
+Conditions:
+  CreateProdResources :
+    Fn::Equals: [!Ref EnvType, "prod"]
+Mappings:
+  RegionMap:
+    us-east-1:
+      Region: North Virginia
+    eu-central-1:
+      Region: Frankfurt
+Resources:
+  Ec2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+#      InstanceType: t2.micro
+      InstanceType:
+        Fn::If:
+          - CreateProdResources
+          - t2.micro
+          - t3.micro
+      ImageId: ami-467ca739 # Amazon Linux AMA
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ",[ EC2, van, the, Longtongster ] ]  # "A simple example"
+      UserData: # bash script that downloads and launches code when creating the EC2 instance
+        Fn::Base64: |
+          #!/bin/bash
+          sudo su
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # Recall bucket name has to be unique
+      BucketName : test-bucket-svw-acg
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+Outputs:
+  WebsiteUrl:
+    Description: URL for website
+    Value:
+      Fn::GetAtt: [S3Bucket, WebsiteURL]
+  # Below we use short notation to get the attribute
+  S3Arn:
+    Description: Arn of the s3 bucket
+    Value:
+      !GetAtt S3Bucket.Arn
+  # Third approach
+  S3DomainName:
+    Description: IPv4 DNS
+    Value: !GetAtt
+      - S3Bucket
+      - DomainName
+  FindInMap:
+    # FindInMap MUST have three arguments
+    Description: Testing the FindInMap function
+    Value:
+      Fn::FindInMap: [ RegionMap, !Ref AWS::Region, Region]
+  ConditionCheck:
+    # Fn::If: MUST have three arguments first a boolean, value if true, value if false
+    Description: "Test intrinsic function Fn:Equals:"
+    Value:
+        Fn::If:
+          - CreateProdResources
+          - t2.micro
+          - t3.micro

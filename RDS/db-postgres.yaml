@@ -1,0 +1,47 @@
+Parameters:
+  DatabaseName:
+    Type: String
+    Default: prices
+    Description: It is important to create a database from the start. Please note the name cannot be "database"
+  Username:
+    Type: String
+    Default: longtong
+  Password:
+    Type: String
+    Default: longtong
+    Description: "It shouldn't be less than 8 characters"
+    MinLength: 8
+
+Resources:
+  MyDBvideoInstance: # Logical Resource name: how this resource is called and referred to in cfn
+    Type: AWS::RDS::DBInstance
+    Properties:
+      # use function that like the python "-".join(list)
+      DBInstanceIdentifier: !Join [ "-",[ "MyDBInstance", !Ref "AWS::Region" ] ] # Name of db in console
+      MasterUsername: !Ref Username
+      MasterUserPassword: !Ref Password
+      DBName: !Ref DatabaseName # IMPORTANT. Name of the database. Without this I do not know how to connect to the db
+      Engine: postgres
+      EngineVersion: 12.8
+      DBInstanceClass: db.t2.micro
+      StorageType: gp2
+      PubliclyAccessible: True # IMPORTANT - if False the DB will not be accessible via internet
+      AllocatedStorage: "20"
+      # Selects the element at index 1 from the list that is returned by !GetAZs
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      VPCSecurityGroups:
+      - !GetAtt DBEC2SecurityGroup.GroupId # I assume this is the id of the subnet in the console
+  DBEC2SecurityGroup: # Logical Id used in cfn in console but also to refer in template
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open database on port 5432 for internet access
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        CidrIp: 0.0.0.0/0
+
+
+
+
+

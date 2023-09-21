@@ -1,0 +1,60 @@
+# Template:
+# - creates a security group
+# - creates an EC2 instance that use this above security group
+# - Mapping table with image ids for different regions
+#     - uses FindInMap to select correct image id
+#     - uses pseudo parameter in this process
+#     - The returned im id is used under the EC2 properties
+# - Uses !Join function to join a list of values to a string
+# - Uses Parameters - to select KeyPair to log in the EC2 instance
+Parameters:
+  NameOfService:
+    Description: The name of the service this stack is to be used for
+    Type: String
+  KeyName:
+    Description: Name of an existing EC2 Keypair to enable SSH access into the server
+    Type: AWS::EC2::KeyPair::KeyName
+Mappings:
+  RegionMap: #Logical name to be used in template for reference
+    us-east-1:
+      AMI: ami-1853ac65
+    us-west-1:
+      AMI: ami-bf5540df
+    eu-west-1:
+      AMI: ami-3bfab942
+    ap-southeast-1:
+      AMI: ami-e2adf99e
+Resources:
+  Ec2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      InstanceType: t2.micro
+      ImageId:
+        Fn::FindInMap:
+        - RegionMap
+        - !Ref AWS::Region   # basically a key e.g. 'us-east-1'
+        - AMI # return the value for the AMI key which is the image id
+      Tags:
+        - Key: "Name"
+          Value: !Ref NameOfService
+      KeyName: !Ref KeyName
+      SecurityGroups:
+        - !Ref MySecurityGroup
+  MySecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Enable SSH and HTTP access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+Outputs:
+  ServerDns:
+    Value: !GetAtt
+      - Ec2Instance
+      - PublicDnsName

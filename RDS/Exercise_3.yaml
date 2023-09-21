@@ -1,0 +1,105 @@
+# Example template to launch an EC2 instance
+
+# Exercise to add an IAM profile to the instance
+
+# REMARKS:
+# - DO NOT FORGET TO LINK THE keypair and the created securitygroup to the instance
+# - The IAM policy was copied from the AmazonS3ReadOnlyAccess managed policy
+#
+# With the attached amazon policy attached you have access to s3.
+# EXERCISE - download a file from S3 using a bootstrap script (later on make this a simple web app)
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: This templates creates IAM profile to allow s3 access and deploys a web site based on code in a bucket
+Parameters:
+  myKeyPair: # KEY - select keypair in order to log into the EC2 instance
+    Description: Amazon EC2 Key Pair
+    Type: AWS::EC2::KeyPair::KeyName
+Resources:
+  myEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      Tags:
+        - Key: Name
+          Value: EC2-hosting-simple-web-app
+      KeyName: !Ref myKeyPair
+      ImageId: ami-04902260ca3d33422
+      InstanceType: t2.micro
+      SecurityGroups:
+        - !Ref MySecurityGroup
+      IamInstanceProfile: !Ref myDummyInstanceProfile
+      UserData: # bash script that downloads and launches code when creating the EC2 instance
+        !Base64 |
+        #!/bin/bash
+        sudo su
+        #export bucket='Sacha'
+        aws s3 cp s3://test-bucket-svw . --recursive
+        mkdir code
+        unzip FlaskApp.zip -d /code
+        cd /code
+        pip3 install -r requirements.txt
+        python3 application.py
+  MySecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Enable SSH and HTTP access for EC2
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+  # For a Role you need:
+  # 1. Create a Role (Role the EC2 instance can assume)
+  # 2. Create a Policy with permissions. Associate the policy with the Rle
+  # 3. Create an instance profile and associate the profile with the role
+  # 4. Attach the instance profile with the EC2 instance (under EC2 properties above)
+  myDummyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+  myDummyRolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: myDummy,
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:Get*
+              - s3:List*
+              - s3-object-lambda:Get*
+              - s3-object-lambda:List*
+            Resource: '*'
+      Roles:
+        - !Ref myDummyRole
+  # Entity used to connect an IAM role to an EC2 instance
+  # Think of an instance profile as WHO AM I
+  # provide temporary credentials that are rotated automatically
+  # Normally the creation and use of the profile is arranged behind the scenes
+  myDummyInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref myDummyRole
+Outputs:
+  InstanceId:
+    Description: The EC2 instance Id
+    Value: !Ref myEC2Instance
+  ServerDns:
+    Value: !GetAtt
+      - myEC2Instance
+      - PublicDnsName
+    Description: The DNS name of the EC2 instance
