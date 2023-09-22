@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: >-
+Description: 
   This template creates an EC2 instance based on the region and selection of an
   AMI ID. It also will create a Security Group.
 Parameters:

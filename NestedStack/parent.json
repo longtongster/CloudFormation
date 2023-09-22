@@ -1,0 +1,19 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+        "myStack" : {
+	       "Type" : "AWS::CloudFormation::Stack",
+	       "Properties" : {
+              "TemplateURL" : "https://s3.amazonaws.com/cfnsvw/lab1.yml",
+              "TimeoutInMinutes" : "60"
+	       }
+        },
+        "myStack2" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+               "TemplateURL" : "https://s3.amazonaws.com/cfnsvw/lab1_s3.yml",
+               "TimeoutInMinutes" : "60"
+            }
+         }
+    }
+}
